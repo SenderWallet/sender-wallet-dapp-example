@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as nearApi from 'near-api-js';
 
 import './App.css';
 
@@ -45,16 +46,18 @@ function App() {
   }
 
   const sayHi = async () => {
-    const res = await window.wallet.signAndSendTransaction({
-      receiverId: contractId,
-      actions: [
-        {
-          methodName: 'sayHi',
-          args: {},
-        }
-      ],
-      usingAccessKey: true,
-    })
+    const res = await window.wallet.signAndSendTransaction(
+      {
+        receiverId: contractId,
+        actions: [
+          {
+            methodName: 'sayHi',
+            args: {},
+          }
+        ],
+        usingAccessKey: true,
+      }
+    );
 
     console.log('Say Hi response: ', res);
   }
@@ -100,9 +103,8 @@ function App() {
           methodName: 'ft_transfer',
           args: {
             receiver_id: 'amazingbeerbelly.testnet',
-            amount: '1000000000000000000', 
+            amount: '1000000000000000000',
           },
-          deposit: ''
         }
       ]
     })
@@ -110,8 +112,8 @@ function App() {
     console.log('Send wNEAR response: ', res);
   }
 
-  const swapAndSendWNear = async () => {
-    const res = await window.wallet.signAndSendTransaction({
+  const swapAndSendWNearWithActions = async () => {
+    const transaction = {
       receiverId: wNearContractId,
       actions: [
         {
@@ -123,13 +125,47 @@ function App() {
           methodName: 'ft_transfer',
           args: {
             receiver_id: 'amazingbeerbelly.testnet',
-            amount: '1000000000000000000', 
+            amount: '1000000000000000000',
           },
         }
       ]
-    })
+    };
 
-    console.log('Swap and Send wNEAR response: ', res); 
+    const res = await window.wallet.signAndSendTransaction(transaction);
+
+    console.log('Swap and Send wNEAR swapAndSendWNearWithActions response: ', res); 
+  }
+
+
+  const swapAndSendWNearWithTransactions = async () => {
+    const transactions = [
+      {
+        receiverId: wNearContractId,
+        actions: [
+          {
+            methodName: 'near_deposit',
+            args: {},
+            amount: '100000000000000000000000',
+          },
+        ]
+      },
+      {
+        receiverId: wNearContractId,
+        actions: [
+          {
+            methodName: 'ft_transfer',
+            args: {
+              receiver_id: 'amazingbeerbelly.testnet',
+              amount: '1000000000000000000',
+            },
+          }
+        ]
+      }
+    ];
+
+    const res = await window.wallet.requestSignTransactions({ transactions });
+
+    console.log('Swap and Send wNEAR with requestSignTransactions response: ', res); 
   }
 
   return (
@@ -172,7 +208,14 @@ function App() {
             <div style={{ marginTop: '20px' }}>
               Request Use to confirm (multiple actions):
               <div style={{ marginTop: '10px' }}>
-                <button style={{ marginLeft: '10px' }} onClick={swapAndSendWNear}>Swap wNEAR and Send</button>
+                <button style={{ marginLeft: '10px' }} onClick={swapAndSendWNearWithActions}>Swap wNEAR and Send</button>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px' }}>
+              Request Use to confirm (multiple transactions):
+              <div style={{ marginTop: '10px' }}>
+                <button style={{ marginLeft: '10px' }} onClick={swapAndSendWNearWithTransactions}>Swap wNEAR and Send</button>
               </div>
             </div>
           </div>
