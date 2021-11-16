@@ -2,12 +2,22 @@ import React, { useState } from 'react';
 import * as nearApi from 'near-api-js';
 
 import './App.css';
+import { Contract } from 'near-api-js';
 
 const contractId = 'dev-1635836502908-29682237937904';
 const wNearContractId = 'wrap.testnet';
+const config = {
+  network: 'testnet',
+  networkId: 'testnet',
+  nodeUrl: "https://rpc.testnet.near.org",
+  walletUrl: "https://wallet.testnet.near.org",
+  helperUrl: "https://helper.testnet.near.org",
+  explorerUrl: "https://explorer.testnet.near.org",
+}
 
 function App() {
   const [wallet, setWallet] = useState(null);
+  const [access, setAccess] = useState({});
   const [theLastOne, setTheLastOne] = useState('');
 
   const init = async () => {
@@ -19,10 +29,12 @@ function App() {
   const connect = async () => {
     const res = await init();
     if (res.accessKey) {
+      setAccess(res.accessKey);
       setWallet(window.wallet);
     } else {
       window.wallet.requestSignIn({ contractId }).then(res => {
         console.log('requestSignIn response: ', res);
+        setAccess(res.accessKey);
         setWallet(window.wallet);
       });
     }
@@ -31,6 +43,7 @@ function App() {
       console.log('newAccountId: ', newAccountId);
       const res = await init();
       if (res.accessKey) {
+        setAccess(res.accessKey);
         setWallet(window.wallet);
       } else {
         setWallet(null);
@@ -46,20 +59,24 @@ function App() {
   }
 
   const sayHi = async () => {
-    const res = await window.wallet.signAndSendTransaction(
-      {
-        receiverId: contractId,
-        actions: [
-          {
-            methodName: 'sayHi',
-            args: {},
-          }
-        ],
-        usingAccessKey: true,
-      }
-    );
+    if (access.secretKey) {
+      const { accountId } = window.wallet;
+      const keyStore = new nearApi.keyStores.InMemoryKeyStore();
+      const keyPair = nearApi.KeyPair.fromString(access.secretKey);
+      await keyStore.setKey('testnet', accountId, keyPair);
+      const near = await nearApi.connect(Object.assign({ deps: { keyStore } }, config));
+      const account = await near.account(accountId);
+      const contract = new Contract(account, contractId, {
+        viewMethods: ['whoSaidHi'],
+        changeMethods: ['sayHi'],
+      });
 
-    console.log('Say Hi response: ', res);
+      const res = await contract.sayHi();
+
+      console.log('Say Hi response: ', res);
+    } else {
+      console.log('please await access to set');
+    }
   }
 
   const getTheLastOne = async () => {
@@ -119,7 +136,7 @@ function App() {
         {
           methodName: 'near_deposit',
           args: {},
-          amount: '100000000000000000000000',
+          deposit: '100000000000000000000000',
         },
         {
           methodName: 'ft_transfer',
@@ -133,7 +150,7 @@ function App() {
 
     const res = await window.wallet.signAndSendTransaction(transaction);
 
-    console.log('Swap and Send wNEAR swapAndSendWNearWithActions response: ', res); 
+    console.log('Swap and Send wNEAR with multiple actions response: ', res); 
   }
 
 
@@ -145,7 +162,7 @@ function App() {
           {
             methodName: 'near_deposit',
             args: {},
-            amount: '100000000000000000000000',
+            deposit: '100000000000000000000000',
           },
         ]
       },
