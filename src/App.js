@@ -49,6 +49,10 @@ function App() {
         setWallet(null);
       } 
     });
+
+    window.wallet.onRpcChanged(async (rpc) => {
+      console.log('rpc: ', rpc);
+    });
   }
 
   const signOut = async () => {
@@ -79,16 +83,15 @@ function App() {
   }
 
   const getTheLastOne = async () => {
-
-    const rpc = await window.wallet.getRpc();
+    let res = await window.wallet.getRpc();
     const connection = nearApi.Connection.fromConfig({
-      networkId: rpc.network,
-      provider: { type: 'JsonRpcProvider', args: { url: rpc.nodeUrl } },
+      networkId: res.rpc.network,
+      provider: { type: 'JsonRpcProvider', args: { url: res.rpc.nodeUrl } },
       signer: {},
     })
 
     const account = new nearApi.Account(connection, 'dontcare');
-    const res = await account.viewFunction(contractId, 'whoSaidHi')
+    res = await account.viewFunction(contractId, 'whoSaidHi')
 
     console.log('Who Saied Hi response: ', res);
     setTheLastOne(res);
