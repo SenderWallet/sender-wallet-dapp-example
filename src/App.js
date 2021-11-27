@@ -72,7 +72,6 @@ function App() {
       });
 
       const res = await contract.sayHi();
-
       console.log('Say Hi response: ', res);
     } else {
       console.log('please await access to set');
@@ -80,10 +79,16 @@ function App() {
   }
 
   const getTheLastOne = async () => {
-    const res = await window.wallet.viewFunctionCall({
-      contractId,
-      methodName: 'whoSaidHi',
+
+    const rpc = await window.wallet.getRpc();
+    const connection = nearApi.Connection.fromConfig({
+      networkId: rpc.network,
+      provider: { type: 'JsonRpcProvider', args: { url: rpc.nodeUrl } },
+      signer: {},
     })
+
+    const account = new nearApi.Account(connection, 'dontcare');
+    const res = await account.viewFunction(contractId, 'whoSaidHi')
 
     console.log('Who Saied Hi response: ', res);
     setTheLastOne(res);
