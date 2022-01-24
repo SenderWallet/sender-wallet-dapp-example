@@ -255,7 +255,7 @@ function App() {
               Request Use to confirm:
               <div style={{ marginTop: '10px' }}>
                 <button style={{ marginLeft: '10px' }} onClick={sendNear}>Send NEAR</button>
-                <button style={{ marginLeft: '10px' }} onClick={wnearStorageDeposit}>WNear storage deposit</button>
+                <button style={{ marginLeft: '10px' }} onClick={wnearStorageDeposit}>wNEAR storage deposit</button>
                 <button style={{ marginLeft: '10px' }} onClick={SwapToWNear}>Swap NEAR to wNEAR</button>
                 <button style={{ marginLeft: '10px' }} onClick={sendWNear}>Send wNEAR</button>
               </div>
