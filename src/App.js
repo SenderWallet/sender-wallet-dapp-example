@@ -4,6 +4,18 @@ import * as nearApi from 'near-api-js';
 import './App.css';
 import { Contract } from 'near-api-js';
 
+const {
+  utils: {
+    format: {
+      parseNearAmount,
+    },
+  },
+} = nearApi;
+
+// account creation costs 0.00125 NEAR for storage, 0.00000000003 NEAR for gas
+// https://docs.near.org/docs/api/naj-cookbook#wrap-and-unwrap-near
+const FT_MINIMUM_STORAGE_BALANCE = parseNearAmount('0.00125');
+
 const contractId = 'dev-1635836502908-29682237937904';
 const wNearContractId = 'wrap.testnet';
 const config = {
@@ -103,6 +115,24 @@ function App() {
       amount: '100000000000000000000000',
     });
     console.log('send near response: ', res);
+  }
+
+  const wnearStorageDeposit = async () => {
+    console.log('window.wallet.accountId: ', window.wallet.accountId);
+    const res = await window.wallet.signAndSendTransaction({
+      receiverId: wNearContractId,
+      actions: [
+        {
+          methodName: 'storage_deposit',
+          args: {
+            account_id: window.wallet.accountId,
+            registration_only: true,
+          },
+          deposit: FT_MINIMUM_STORAGE_BALANCE,
+        }
+      ]
+    })
+    console.log('WNear storage deposit response: ', res);
   }
 
   const SwapToWNear = async () => {
@@ -225,6 +255,7 @@ function App() {
               Request Use to confirm:
               <div style={{ marginTop: '10px' }}>
                 <button style={{ marginLeft: '10px' }} onClick={sendNear}>Send NEAR</button>
+                <button style={{ marginLeft: '10px' }} onClick={wnearStorageDeposit}>WNear storage deposit</button>
                 <button style={{ marginLeft: '10px' }} onClick={SwapToWNear}>Swap NEAR to wNEAR</button>
                 <button style={{ marginLeft: '10px' }} onClick={sendWNear}>Send wNEAR</button>
               </div>
