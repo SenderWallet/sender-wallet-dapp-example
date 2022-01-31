@@ -4,6 +4,18 @@ import * as nearApi from 'near-api-js';
 import './App.css';
 import { Contract } from 'near-api-js';
 
+const {
+  utils: {
+    format: {
+      parseNearAmount,
+    },
+  },
+} = nearApi;
+
+// account creation costs 0.00125 NEAR for storage, 0.00000000003 NEAR for gas
+// https://docs.near.org/docs/api/naj-cookbook#wrap-and-unwrap-near
+const FT_MINIMUM_STORAGE_BALANCE = parseNearAmount('0.00125');
+
 const contractId = 'dev-1635836502908-29682237937904';
 const wNearContractId = 'wrap.testnet';
 const config = {
@@ -120,7 +132,7 @@ function App() {
 
     const account = new nearApi.Account(connection, 'icaredeeply');
     res = await account.viewFunction(wNearContractId, 'storage_balance_of', {"account_id": wallet.accountId})
-    if (res.total !== '1250000000000000000000') {
+    if (res.total !== FT_MINIMUM_STORAGE_BALANCE) {
       actions.unshift({
         methodName: 'storage_deposit',
         args: {
