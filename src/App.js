@@ -38,7 +38,7 @@ function App() {
         setWallet(window.wallet);
       });
     }
-    
+
     window.wallet.onAccountChanged(async (newAccountId) => {
       console.log('newAccountId: ', newAccountId);
       const res = await init();
@@ -47,7 +47,7 @@ function App() {
         setWallet(window.wallet);
       } else {
         setWallet(null);
-      } 
+      }
     });
 
     window.wallet.onRpcChanged(async (rpc) => {
@@ -105,16 +105,46 @@ function App() {
     console.log('send near response: ', res);
   }
 
+  // Note: this function exists because at the time of this writing, the wrap.testnet smart contract
+  // doesn't have the latest version of the w-near contract.
+  // It doesn't abide by the Storage Management standard here: https://nomicon.io/Standards/StorageManagement
+  // This is the smart contract that needs to be deployed over it:
+  // https://github.com/near/core-contracts/tree/5f4b7638d4f446eeb089e261dc80c4dcaf69dd48/w-near
+  const hackForWrap = async (actions) => {
+    let res = await window.wallet.getRpc();
+    const connection = nearApi.Connection.fromConfig({
+      networkId: res.rpc.network,
+      provider: { type: 'JsonRpcProvider', args: { url: res.rpc.nodeUrl } },
+      signer: {},
+    })
+
+    const account = new nearApi.Account(connection, 'icaredeeply');
+    res = await account.viewFunction(wNearContractId, 'storage_balance_of', {"account_id": wallet.accountId})
+    if (res.total !== '1250000000000000000000') {
+      actions.unshift({
+        methodName: 'storage_deposit',
+        args: {
+          registration_only: true
+        },
+        deposit: '1250000000000000000000'
+      })
+    }
+    return actions
+  }
+
   const SwapToWNear = async () => {
-    const res = await window.wallet.signAndSendTransaction({
-      receiverId: wNearContractId,
-      actions: [
+    let actions = [
         {
           methodName: 'near_deposit',
           args: {},
           deposit: '100000000000000000000000',
         }
-      ]
+    ]
+    actions = await hackForWrap(actions)
+
+    const res = await window.wallet.signAndSendTransaction({
+      receiverId: wNearContractId,
+      actions
     })
 
     console.log('Swap NEAR to wNEAR response: ', res);
@@ -138,41 +168,45 @@ function App() {
   }
 
   const swapAndSendWNearWithActions = async () => {
+    let actions = [
+      {
+        methodName: 'near_deposit',
+        args: {},
+        deposit: '100000000000000000000000',
+      },
+      {
+        methodName: 'ft_transfer',
+        args: {
+          receiver_id: 'amazingbeerbelly.testnet',
+          amount: '1000000000000000000',
+        },
+      }
+    ]
+    actions = await hackForWrap(actions)
     const transaction = {
       receiverId: wNearContractId,
-      actions: [
-        {
-          methodName: 'near_deposit',
-          args: {},
-          deposit: '100000000000000000000000',
-        },
-        {
-          methodName: 'ft_transfer',
-          args: {
-            receiver_id: 'amazingbeerbelly.testnet',
-            amount: '1000000000000000000',
-          },
-        }
-      ]
+      actions
     };
 
     const res = await window.wallet.signAndSendTransaction(transaction);
 
-    console.log('Swap and Send wNEAR with multiple actions response: ', res); 
+    console.log('Swap and Send wNEAR with multiple actions response: ', res);
   }
 
 
   const swapAndSendWNearWithTransactions = async () => {
+    let actions = [
+      {
+        methodName: 'near_deposit',
+        args: {},
+        deposit: '100000000000000000000000',
+      },
+    ]
+    actions = await hackForWrap(actions)
     const transactions = [
       {
         receiverId: wNearContractId,
-        actions: [
-          {
-            methodName: 'near_deposit',
-            args: {},
-            deposit: '100000000000000000000000',
-          },
-        ]
+        actions
       },
       {
         receiverId: wNearContractId,
@@ -190,7 +224,7 @@ function App() {
 
     const res = await window.wallet.requestSignTransactions({ transactions });
 
-    console.log('Swap and Send wNEAR with requestSignTransactions response: ', res); 
+    console.log('Swap and Send wNEAR with requestSignTransactions response: ', res);
   }
 
   return (
