@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import * as nearApi from 'near-api-js';
 
 import './App.css';
@@ -28,55 +28,56 @@ const config = {
 }
 
 function App() {
-  const [wallet, setWallet] = useState(null);
   const [access, setAccess] = useState({});
+  const [accountId, setAccountId] = useState('');
   const [theLastOne, setTheLastOne] = useState('');
 
-  const init = async () => {
-    const res = await window.wallet.init({ contractId })
-    console.log('init response: ', res);
-    return res;
-  }
-
   const connect = async () => {
-    const res = await init();
-    if (res.accessKey) {
-      setAccess(res.accessKey);
-      setWallet(window.wallet);
-    } else {
-      window.wallet.requestSignIn({ contractId }).then(res => {
-        console.log('requestSignIn response: ', res);
-        setAccess(res.accessKey);
-        setWallet(window.wallet);
+    const res = await window.near.connect();
+    console.log('connected account id: ', res)
+    if (!res?.error && !res?.response?.error) {
+      setAccountId(res)
+      
+      window.near.on('accountChanged', (newAccountId) => {
+        console.log('newAccountId: ', newAccountId);
+      });
+      
+      window.near.on('rpcChanged', (rpc) => {
+        console.log('rpc: ', rpc);
       });
     }
+  }
 
-    window.wallet.onAccountChanged(async (newAccountId) => {
-      console.log('newAccountId: ', newAccountId);
-      const res = await init();
-      if (res.accessKey) {
-        setAccess(res.accessKey);
-        setWallet(window.wallet);
-      } else {
-        setWallet(null);
+  const signin = async () => {
+    try {
+      // The method names on the contract that should be allowed to be called. Pass null for no method names and '' or [] for any method names.
+      // const res = await window.near.requestSignIn({ contractId, methodNames: ['viewAccount', 'transfer', 'trabsdb', 'askjdkjzx', 'ajsnd', 'zxch'] })
+      // const res = await window.near.requestSignIn({ contractId, methodNames: null })
+      const res = await window.near.requestSignIn({ contractId, methodNames: [] })
+      // const res = await window.near.requestSignIn({ contractId, amount: '10000000000000000000000' })
+      console.log('signin res: ', res);
+      if (!res.error) {
+        if (res && res.accessKey) {
+          setAccess(res.accessKey);
+        } else {
+          console.log('res: ', res)
+        }
       }
-    });
-
-    window.wallet.onRpcChanged(async (rpc) => {
-      console.log('rpc: ', rpc);
-    });
+    } catch (error) {
+      console.log('error: ', error)
+    }
   }
 
   const signOut = async () => {
-    console.log('wallet: ', wallet);
-    const res = await window.wallet.signOut();
+    const res = await window.near.disconnect();
     console.log('signout res: ', res);
-    setWallet(null);
+    setAccess({})
+    setAccountId('')
   }
 
   const sayHi = async () => {
     if (access.secretKey) {
-      const { accountId } = window.wallet;
+      const { accountId } = window.near;
       const keyStore = new nearApi.keyStores.InMemoryKeyStore();
       const keyPair = nearApi.KeyPair.fromString(access.secretKey);
       await keyStore.setKey('testnet', accountId, keyPair);
@@ -95,23 +96,17 @@ function App() {
   }
 
   const getTheLastOne = async () => {
-    let res = await window.wallet.getRpc();
-    const connection = nearApi.Connection.fromConfig({
-      networkId: res.rpc.network,
-      provider: { type: 'JsonRpcProvider', args: { url: res.rpc.nodeUrl } },
-      signer: {},
+    const res = await window.near.viewFunction({
+      contractId, methodName: 'whoSaidHi',
     })
 
-    const account = new nearApi.Account(connection, 'dontcare');
-    res = await account.viewFunction(contractId, 'whoSaidHi')
-
-    console.log('Who Saied Hi response: ', res);
-    setTheLastOne(res);
+    console.log('Who Saied Hi response: ', res.response);
+    setTheLastOne(res.response);
   }
 
   const sendNear = async () => {
-    const res = await window.wallet.sendMoney({
-      receiverId: 'amazingbeerbelly.testnet',
+    const res = await window.near.sendMoney({
+      receiverId: 'amazingbeerbelly-2.testnet',
       amount: '100000000000000000000000',
     });
     console.log('send near response: ', res);
@@ -123,23 +118,22 @@ function App() {
   // This is the smart contract that needs to be deployed over it:
   // https://github.com/near/core-contracts/tree/5f4b7638d4f446eeb089e261dc80c4dcaf69dd48/w-near
   const hackForWrap = async (actions) => {
-    let res = await window.wallet.getRpc();
-    const connection = nearApi.Connection.fromConfig({
-      networkId: res.rpc.network,
-      provider: { type: 'JsonRpcProvider', args: { url: res.rpc.nodeUrl } },
-      signer: {},
+    const res = await window.near.viewFunction({
+      contractId: wNearContractId,
+      methodName: 'storage_balance_of',
+      args: { "account_id": window.near.accountId },
     })
-
-    const account = new nearApi.Account(connection, 'icaredeeply');
-    res = await account.viewFunction(wNearContractId, 'storage_balance_of', {"account_id": wallet.accountId})
-    if (res.total !== FT_MINIMUM_STORAGE_BALANCE) {
-      actions.unshift({
-        methodName: 'storage_deposit',
-        args: {
-          registration_only: true
-        },
-        deposit: '1250000000000000000000'
-      })
+    if (!res.error) {
+      console.log('res: ', res);
+      if (res.response.total !== FT_MINIMUM_STORAGE_BALANCE) {
+        actions.unshift({
+          methodName: 'storage_deposit',
+          args: {
+            registration_only: true
+          },
+          deposit: '1250000000000000000000'
+        })
+      }
     }
     return actions
   }
@@ -154,7 +148,7 @@ function App() {
     ]
     actions = await hackForWrap(actions)
 
-    const res = await window.wallet.signAndSendTransaction({
+    const res = await window.near.signAndSendTransaction({
       receiverId: wNearContractId,
       actions
     })
@@ -163,15 +157,16 @@ function App() {
   }
 
   const sendWNear = async () => {
-    const res = await window.wallet.signAndSendTransaction({
+    const res = await window.near.signAndSendTransaction({
       receiverId: wNearContractId,
       actions: [
         {
           methodName: 'ft_transfer',
           args: {
-            receiver_id: 'amazingbeerbelly.testnet',
-            amount: '1000000000000000000',
+            receiver_id: 'amazingbeerbelly-2.testnet',
+            amount: '100000000000000000000000',  // wNear decimals is 24
           },
+          deposit: '1',
         }
       ]
     })
@@ -189,18 +184,19 @@ function App() {
       {
         methodName: 'ft_transfer',
         args: {
-          receiver_id: 'amazingbeerbelly.testnet',
-          amount: '1000000000000000000',
+          receiver_id: 'amazingbeerbelly-2.testnet',
+          amount: '100000000000000000000000',
         },
+        deposit: '1',
       }
     ]
     actions = await hackForWrap(actions)
     const transaction = {
       receiverId: wNearContractId,
-      actions
+      actions,
     };
 
-    const res = await window.wallet.signAndSendTransaction(transaction);
+    const res = await window.near.signAndSendTransaction(transaction);
 
     console.log('Swap and Send wNEAR with multiple actions response: ', res);
   }
@@ -226,27 +222,47 @@ function App() {
           {
             methodName: 'ft_transfer',
             args: {
-              receiver_id: 'amazingbeerbelly.testnet',
+              receiver_id: 'amazingbeerbelly-2.testnet',
               amount: '1000000000000000000',
             },
+            deposit: '1',
           }
         ]
       }
     ];
 
-    const res = await window.wallet.requestSignTransactions({ transactions });
+    const res = await window.near.signAndSendTransactions({ transactions });
 
     console.log('Swap and Send wNEAR with requestSignTransactions response: ', res);
   }
 
   return (
     <div className="App">
-      <div>Current Account ID: {wallet && wallet.accountId}</div>
-
-      {wallet && wallet.isSignedIn() ? (<button style={{ marginTop: '20px' }} onClick={signOut}>Sign out</button>) : (<button onClick={connect}>Connect</button>)}
-
       {
-        wallet && wallet.isSignedIn() && (
+        !accountId ? (
+          <div>
+            <button onClick={connect}>Connect</button>
+          </div>
+        ) : (
+            access.secretKey ? (
+              <div>
+                <div>Connected account id: {accountId}</div>
+                <div>Signed access key (secretKey): {access.secretKey.slice(0, 16)}...</div>
+                <button style={{ marginTop: '20px' }} onClick={signOut}>Sign out</button>
+              </div>
+            ) : (
+              <div>
+                <div>
+                  <div>Connected account id: {accountId}</div>
+                </div>
+                <button style={{ marginTop: '20px' }} onClick={signin}>Sign in</button>
+              </div>
+            )
+        )
+      }
+      
+      {
+        access.secretKey && (
           <div>
             <div style={{ marginTop: '20px' }}>
               Using access key to make a function call:
