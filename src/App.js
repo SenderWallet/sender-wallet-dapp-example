@@ -51,9 +51,9 @@ function App() {
   const signin = async () => {
     try {
       // The method names on the contract that should be allowed to be called. Pass null for no method names and '' or [] for any method names.
-      // const res = await window.near.requestSignIn({ contractId, methodNames: ['viewAccount', 'transfer', 'trabsdb', 'askjdkjzx', 'ajsnd', 'zxch'] })
+      const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi'] })
       // const res = await window.near.requestSignIn({ contractId, methodNames: null })
-      const res = await window.near.requestSignIn({ contractId, methodNames: [] })
+      // const res = await window.near.requestSignIn({ contractId, methodNames: [] })
       // const res = await window.near.requestSignIn({ contractId, amount: '10000000000000000000000' })
       console.log('signin res: ', res);
       if (!res.error) {
@@ -76,22 +76,26 @@ function App() {
   }
 
   const sayHi = async () => {
-    if (access.secretKey) {
-      const { accountId } = window.near;
-      const keyStore = new nearApi.keyStores.InMemoryKeyStore();
-      const keyPair = nearApi.KeyPair.fromString(access.secretKey);
-      await keyStore.setKey('testnet', accountId, keyPair);
-      const near = await nearApi.connect(Object.assign({ deps: { keyStore } }, config));
-      const account = await near.account(accountId);
-      const contract = new Contract(account, contractId, {
-        viewMethods: ['whoSaidHi'],
-        changeMethods: ['sayHi'],
-      });
-
-      const res = await contract.sayHi();
-      console.log('Say Hi response: ', res);
-    } else {
-      console.log('please await access to set');
+    try {
+      if (access.secretKey) {
+        const { accountId } = window.near;
+        const keyStore = new nearApi.keyStores.InMemoryKeyStore();
+        const keyPair = nearApi.KeyPair.fromString(access.secretKey);
+        await keyStore.setKey('testnet', accountId, keyPair);
+        const near = await nearApi.connect(Object.assign({ deps: { keyStore } }, config));
+        const account = await near.account(accountId);
+        const contract = new Contract(account, contractId, {
+          viewMethods: ['whoSaidHi'],
+          changeMethods: ['sayHi'],
+        });
+  
+        const res = await contract.sayHi();
+        console.log('Say Hi response: ', res);
+      } else {
+        console.log('please await access to set');
+      } 
+    } catch (error) {
+      console.log('sayHi error: ', error);
     }
   }
 
