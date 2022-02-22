@@ -3,6 +3,7 @@ import * as nearApi from 'near-api-js';
 
 import './App.css';
 import { Contract } from 'near-api-js';
+import { useEffect } from 'react/cjs/react.production.min';
 
 const {
   utils: {
@@ -37,6 +38,14 @@ function App() {
     console.log('connected account id: ', res)
     if (!res?.error && !res?.response?.error) {
       setAccountId(res)
+
+      window.near.on('singIn', (res) => {
+        console.log('singIn res: ', res)
+      });
+
+      window.near.on('singOut', (res) => {
+        console.log('singOut res: ', res)
+      });
       
       window.near.on('accountChanged', (newAccountId) => {
         console.log('newAccountId: ', newAccountId);
