@@ -78,7 +78,7 @@ function App() {
   const sayHi = async () => {
     try {
       if (access.secretKey) {
-        const { accountId } = window.near;
+        const accountId = window.near.getAccountId();
         const keyStore = new nearApi.keyStores.InMemoryKeyStore();
         const keyPair = nearApi.KeyPair.fromString(access.secretKey);
         await keyStore.setKey('testnet', accountId, keyPair);
@@ -235,7 +235,7 @@ function App() {
       }
     ];
 
-    const res = await window.near.signAndSendTransactions({ transactions });
+    const res = await window.near.requestSignTransactions({ transactions });
 
     console.log('Swap and Send wNEAR with requestSignTransactions response: ', res);
   }
