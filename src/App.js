@@ -33,34 +33,34 @@ function App() {
   const [accountId, setAccountId] = useState('');
   const [theLastOne, setTheLastOne] = useState('');
 
-  const connect = async () => {
-    const res = await window.near.connect();
-    console.log('connected account id: ', res)
-    if (!res?.error && !res?.response?.error) {
-      setAccountId(res)
+  // const connect = async () => {
+  //   const res = await window.near.connect();
+  //   console.log('connected account id: ', res)
+  //   if (!res?.error && !res?.response?.error) {
+  //     setAccountId(res)
 
-      window.near.on('singIn', (res) => {
-        console.log('singIn res: ', res)
-      });
+  //     window.near.on('singIn', (res) => {
+  //       console.log('singIn res: ', res)
+  //     });
 
-      window.near.on('singOut', (res) => {
-        console.log('singOut res: ', res)
-      });
+  //     window.near.on('singOut', (res) => {
+  //       console.log('singOut res: ', res)
+  //     });
       
-      window.near.on('accountChanged', (newAccountId) => {
-        console.log('newAccountId: ', newAccountId);
-      });
+  //     window.near.on('accountChanged', (newAccountId) => {
+  //       console.log('newAccountId: ', newAccountId);
+  //     });
       
-      window.near.on('rpcChanged', (rpc) => {
-        console.log('rpc: ', rpc);
-      });
-    }
-  }
+  //     window.near.on('rpcChanged', (rpc) => {
+  //       console.log('rpc: ', rpc);
+  //     });
+  //   }
+  // }
 
   const signin = async () => {
     try {
       // The method names on the contract that should be allowed to be called. Pass null for no method names and '' or [] for any method names.
-      const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi'] })
+      const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi', 'ad'] })
       // const res = await window.near.requestSignIn({ contractId, methodNames: null })
       // const res = await window.near.requestSignIn({ contractId, methodNames: [] })
       // const res = await window.near.requestSignIn({ contractId, amount: '10000000000000000000000' })
@@ -68,6 +68,7 @@ function App() {
       if (!res.error) {
         if (res && res.accessKey) {
           setAccess(res.accessKey);
+          setAccountId(window.near.accountId)
         } else {
           console.log('res: ', res)
         }
@@ -252,11 +253,6 @@ function App() {
   return (
     <div className="App">
       {
-        !accountId ? (
-          <div>
-            <button onClick={connect}>Connect</button>
-          </div>
-        ) : (
             access.secretKey ? (
               <div>
                 <div>Connected account id: {accountId}</div>
@@ -271,7 +267,6 @@ function App() {
                 <button style={{ marginTop: '20px' }} onClick={signin}>Sign in</button>
               </div>
             )
-        )
       }
       
       {
