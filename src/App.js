@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import * as nearApi from 'near-api-js';
 
 import './App.css';
 import { Contract } from 'near-api-js';
-import { useEffect } from 'react/cjs/react.production.min';
 
 const {
   utils: {
@@ -28,41 +27,36 @@ const config = {
   explorerUrl: "https://explorer.testnet.near.org",
 }
 
-function App() {
+const App = () => {
   const [access, setAccess] = useState({});
   const [accountId, setAccountId] = useState('');
   const [theLastOne, setTheLastOne] = useState('');
 
-  // const connect = async () => {
-  //   const res = await window.near.connect();
-  //   console.log('connected account id: ', res)
-  //   if (!res?.error && !res?.response?.error) {
-  //     setAccountId(res)
-
-  //     window.near.on('singIn', (res) => {
-  //       console.log('singIn res: ', res)
-  //     });
-
-  //     window.near.on('singOut', (res) => {
-  //       console.log('singOut res: ', res)
-  //     });
-      
-  //     window.near.on('accountChanged', (newAccountId) => {
-  //       console.log('newAccountId: ', newAccountId);
-  //     });
-      
-  //     window.near.on('rpcChanged', (rpc) => {
-  //       console.log('rpc: ', rpc);
-  //     });
-  //   }
-  // }
+  useEffect(() => {
+    if (window.near) {
+      window.near.on({
+        'signIn': (res) => {
+          console.log('singIn callback res: ', res)
+        },
+        'signOut': (res) => {
+          console.log('signOut callback res: ', res)
+        },
+        'accountChanged': (newAccountId) => {
+          console.log('newAccountId: ', newAccountId);
+        },
+        'rpcChanged': (rpc) => {
+          console.log('rpc: ', rpc);
+        }
+      })
+    }
+  }, [window && window.near])
 
   const signin = async () => {
     try {
       // The method names on the contract that should be allowed to be called. Pass null for no method names and '' or [] for any method names.
       const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi', 'ad'] })
       // const res = await window.near.requestSignIn({ contractId, methodNames: null })
-      // const res = await window.near.requestSignIn({ contractId, methodNames: [] })
+      // const res = await window.near.requestSignIn({ contractId: {}, methodNames: [] })
       // const res = await window.near.requestSignIn({ contractId, amount: '10000000000000000000000' })
       console.log('signin res: ', res);
       if (!res.error) {
