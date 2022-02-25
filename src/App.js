@@ -34,22 +34,50 @@ const App = () => {
 
   useEffect(() => {
     if (window.near) {
-      window.near.on({
-        'signIn': (res) => {
-          console.log('singIn callback res: ', res)
-        },
-        'signOut': (res) => {
-          console.log('signOut callback res: ', res)
-        },
-        'accountChanged': (newAccountId) => {
+      setTimeout(() => {
+        window.near.on('signIn', (res) => {
+          console.log('signIn res: ', res)
+        });
+  
+        window.near.on('signOut', (res) => {
+          console.log('signOut res: ', res)
+        });
+        
+        window.near.on('accountChanged', (newAccountId) => {
           console.log('newAccountId: ', newAccountId);
-        },
-        'rpcChanged': (rpc) => {
+        });
+        
+        window.near.on('rpcChanged', (rpc) => {
           console.log('rpc: ', rpc);
-        }
-      })
+        });
+      }, 1000)
     }
   }, [window && window.near])
+  
+
+  // const connect = async () => {
+  //   const res = await window.near.connect();
+  //   console.log('connected account id: ', res)
+  //   if (!res?.error && !res?.response?.error) {
+  //     setAccountId(res)
+
+  //     window.near.on('singIn', (res) => {
+  //       console.log('singIn res: ', res)
+  //     });
+
+  //     window.near.on('singOut', (res) => {
+  //       console.log('singOut res: ', res)
+  //     });
+      
+  //     window.near.on('accountChanged', (newAccountId) => {
+  //       console.log('newAccountId: ', newAccountId);
+  //     });
+      
+  //     window.near.on('rpcChanged', (rpc) => {
+  //       console.log('rpc: ', rpc);
+  //     });
+  //   }
+  // }
 
   const signin = async () => {
     try {
