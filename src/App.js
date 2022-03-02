@@ -108,7 +108,7 @@ const App = () => {
   }
 
   const getTheLastOne = async () => {
-    const res = await window.near.account.viewFunction(contractId, 'whoSaidHi')
+    const res = await window.near.account().viewFunction(contractId, 'whoSaidHi')
 
     console.log('Who Saied Hi response: ', res);
     setTheLastOne(res);
@@ -128,7 +128,7 @@ const App = () => {
   // This is the smart contract that needs to be deployed over it:
   // https://github.com/near/core-contracts/tree/5f4b7638d4f446eeb089e261dc80c4dcaf69dd48/w-near
   const hackForWrap = async (actions) => {
-    const res = await window.near.account.viewFunction(
+    const res = await window.near.account().viewFunction(
       wNearContractId,
       'storage_balance_of',
       { "account_id": window.near.accountId },
