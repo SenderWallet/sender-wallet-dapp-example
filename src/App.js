@@ -17,6 +17,7 @@ const {
 const FT_MINIMUM_STORAGE_BALANCE = parseNearAmount('0.00125');
 
 const contractId = 'dev-1635836502908-29682237937904';
+// const contractId = 'v2.ref-farming.near';
 const wNearContractId = 'wrap.testnet';
 const config = {
   network: 'testnet',
@@ -53,38 +54,13 @@ const App = () => {
       }, 1000)
     }
   }, [window && window.near])
-  
-
-  // const connect = async () => {
-  //   const res = await window.near.connect();
-  //   console.log('connected account id: ', res)
-  //   if (!res?.error && !res?.response?.error) {
-  //     setAccountId(res)
-
-  //     window.near.on('singIn', (res) => {
-  //       console.log('singIn res: ', res)
-  //     });
-
-  //     window.near.on('singOut', (res) => {
-  //       console.log('singOut res: ', res)
-  //     });
-      
-  //     window.near.on('accountChanged', (newAccountId) => {
-  //       console.log('newAccountId: ', newAccountId);
-  //     });
-      
-  //     window.near.on('rpcChanged', (rpc) => {
-  //       console.log('rpc: ', rpc);
-  //     });
-  //   }
-  // }
 
   const signin = async () => {
     try {
       // The method names on the contract that should be allowed to be called. Pass null for no method names and '' or [] for any method names.
-      const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi', 'ad'] })
+      // const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi', 'ad'] })
       // const res = await window.near.requestSignIn({ contractId, methodNames: null })
-      // const res = await window.near.requestSignIn({ contractId: {}, methodNames: [] })
+      const res = await window.near.requestSignIn({ contractId, methodNames: [] })
       // const res = await window.near.requestSignIn({ contractId, amount: '10000000000000000000000' })
       console.log('signin res: ', res);
       if (!res.error) {
@@ -132,12 +108,10 @@ const App = () => {
   }
 
   const getTheLastOne = async () => {
-    const res = await window.near.viewFunction({
-      contractId, methodName: 'whoSaidHi',
-    })
+    const res = await window.near.account.viewFunction(contractId, 'whoSaidHi')
 
-    console.log('Who Saied Hi response: ', res.response);
-    setTheLastOne(res.response);
+    console.log('Who Saied Hi response: ', res);
+    setTheLastOne(res);
   }
 
   const sendNear = async () => {
@@ -154,14 +128,14 @@ const App = () => {
   // This is the smart contract that needs to be deployed over it:
   // https://github.com/near/core-contracts/tree/5f4b7638d4f446eeb089e261dc80c4dcaf69dd48/w-near
   const hackForWrap = async (actions) => {
-    const res = await window.near.viewFunction({
-      contractId: wNearContractId,
-      methodName: 'storage_balance_of',
-      args: { "account_id": window.near.accountId },
-    })
+    const res = await window.near.account.viewFunction(
+      wNearContractId,
+      'storage_balance_of',
+      { "account_id": window.near.accountId },
+    )
     if (!res.error) {
       console.log('res: ', res);
-      if (res.response.total !== FT_MINIMUM_STORAGE_BALANCE) {
+      if (res.total !== FT_MINIMUM_STORAGE_BALANCE) {
         actions.unshift({
           methodName: 'storage_deposit',
           args: {
