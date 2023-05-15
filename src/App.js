@@ -54,13 +54,13 @@ const App = () => {
       }, 1000);
     }
 
-    if (window.ethereum) {
-      window.ethereum.on("chainChanged", (res) => {
+    if (window.sender && window.sender.ethereum) {
+      window.sender.ethereum.on("chainChanged", (res) => {
         console.log("chainChanged res: ", res);
         setChainId(res);
       });
 
-      window.ethereum.on("accountsChanged", (res) => {
+      window.sender.ethereum.on("accountsChanged", (res) => {
         if (res.length) {
           console.log("accountsChanged res: ", res);
           setEthAccountId(res[0]);
@@ -127,8 +127,8 @@ const App = () => {
       // const res = await window.near.requestSignIn({ contractId, methodNames: ['sayHi', 'ad'] })
       // const res = await window.near.requestSignIn({ contractId, methodNames: null })
       // const res = await window.near.requestSignIn({ contractId, amount: '10000000000000000000000' })
-      if (window.ethereum) {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (window.sender && window.sender.ethereum) {
+        const accounts = await window.sender.ethereum.request({ method: 'eth_requestAccounts' });
 
         if (accounts.length) {
           setEthAccountId(accounts[0]);
@@ -142,8 +142,8 @@ const App = () => {
   };
 
   const signOutEthereum = async () => {
-    if (window.ethereum) {
-      const res = await window.ethereum._handleDisconnect();
+    if (window.sender && window.sender.ethereum) {
+      const res = await window.sender.ethereum._handleDisconnect();
       console.log("sign out ethereum res: ", res);
       setChainId("");
       setEthAccountId("");
